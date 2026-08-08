@@ -1,4 +1,4 @@
-import { classifyTokensWithAI, generateAISignal } from '@/lib/classification/ai';
+import { classifyTokensWithAI, generateAISignals } from '@/lib/classification/ai';
 
 describe('Unified AI Cascade Integration Tests', () => {
   const originalFetch = global.fetch;
@@ -49,12 +49,15 @@ describe('Unified AI Cascade Integration Tests', () => {
     expect(result['0xabcdef']).toBe('DePIN');
   });
 
-  test('generateAISignal requests and returns signal sentence string', async () => {
+  test('generateAISignals requests and returns batch signals map object', async () => {
     const mockResponse = {
       choices: [
         {
           message: {
-            content: 'Volume surges as decentralized GPU rendering projects expand.'
+            content: JSON.stringify({
+              'AI Compute': 'Volume surges as GPU rendering networks expand.',
+              'DePIN': 'Activity rises as hardware hotspots increase pools.'
+            })
           }
         }
       ]
@@ -67,27 +70,25 @@ describe('Unified AI Cascade Integration Tests', () => {
       })
     ) as any;
 
-    const signal = await generateAISignal('AI Compute', ['$NOS'], {
-      volume: 450000,
-      liquidity: 120000,
-      coins: 3
-    });
+    const signals = await generateAISignals([
+      { name: 'AI Compute', leaders: ['$NOS'], volume: 450000, liquidity: 120000, coins: 3 },
+      { name: 'DePIN', leaders: ['$HNT'], volume: 150000, liquidity: 50000, coins: 2 }
+    ]);
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(signal).toBe('Volume surges as decentralized GPU rendering projects expand.');
+    expect(signals['AI Compute']).toBe('Volume surges as GPU rendering networks expand.');
+    expect(signals['DePIN']).toBe('Activity rises as hardware hotspots increase pools.');
   });
 
-  test('Returns empty string silently if AI signal cascade fails', async () => {
+  test('Returns empty object silently if AI signal batch generation fails', async () => {
     global.fetch = jest.fn().mockImplementation(() =>
       Promise.reject(new Error('Rate limit exceeded'))
     ) as any;
 
-    const signal = await generateAISignal('AI Compute', ['$NOS'], {
-      volume: 450000,
-      liquidity: 120000,
-      coins: 3
-    });
+    const signals = await generateAISignals([
+      { name: 'AI Compute', leaders: ['$NOS'], volume: 450000, liquidity: 120000, coins: 3 }
+    ]);
 
-    expect(signal).toBe('');
+    expect(signals).toEqual({});
   });
 });

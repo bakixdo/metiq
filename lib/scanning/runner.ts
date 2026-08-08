@@ -4,7 +4,7 @@ import { classifyToken } from '../classification/taxonomy';
 import { scoreNarratives, ScoredNarrative } from '../scoring/engine';
 import { formatTelegramReport } from '../reports/formatter';
 import { getEnv } from '../config/env';
-import { classifyTokensWithAI, generateAISignal } from '../classification/ai';
+import { classifyTokensWithAI, generateAISignals } from '../classification/ai';
 
 export interface ScanResult {
   scanId: string;
@@ -127,16 +127,19 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
       throw new Error(`Market data collection returned zero tokens. Details: ${collectorStatus.errorSummary || 'No error details'}`);
     }
 
+    // Sort tokens by 6H volume descending and take the top 60 to keep token classification prompts highly compact and save API credits
+    const topTokens = [...tokens].sort((a, b) => b.volume_6h - a.volume_6h).slice(0, 60);
+
     // 5. CLASSIFY TOKENS (Hybrid AI + Keyword Taxonomy)
     let aiClassifications: Record<string, string> = {};
     try {
       console.log('🤖 Triggering AI classification cascade...');
-      aiClassifications = await classifyTokensWithAI(tokens);
+      aiClassifications = await classifyTokensWithAI(topTokens);
     } catch (err: any) {
       console.warn('⚠️ AI classification cascade failed, falling back to taxonomy matching:', err.message);
     }
 
-    const classifiedTokens = tokens.map(tok => {
+    const classifiedTokens = topTokens.map(tok => {
       let narrative = aiClassifications[tok.address.toLowerCase()];
       // If AI classifies as "Other" or fails to classify, verify with taxonomy keyword match
       if (!narrative || narrative === 'Other') {
@@ -183,31 +186,38 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
     // 7. SCORE NARRATIVES
     const scoredNarratives = scoreNarratives(classifiedTokens, previousSnapshots);
 
-    // 7.5. GENERATE AI SIGNALS FOR TOP 5 NARRATIVES
+    // 7.5. GENERATE AI SIGNALS FOR TOP 5 NARRATIVES IN A SINGLE REQUEST
     if (scoredNarratives.length > 0) {
       console.log('🤖 Generating dynamic market intelligence signals via AI cascade...');
-      const signalPromises = scoredNarratives.slice(0, 5).map(async (sn) => {
-        if (sn.warnings.length === 0) {
-          try {
-            const signal = await generateAISignal(sn.name, sn.leaders, {
-              volume: sn.volume_6h,
-              liquidity: sn.liquidity,
-              coins: sn.coin_count,
-            });
-            if (signal) {
-              sn.signal = signal;
+      try {
+        const narrativesToQuery = scoredNarratives
+          .slice(0, 5)
+          .filter(sn => sn.warnings.length === 0)
+          .map(sn => ({
+            name: sn.name,
+            leaders: sn.leaders,
+            volume: sn.volume_6h,
+            liquidity: sn.liquidity,
+            coins: sn.coin_count,
+          }));
+
+        if (narrativesToQuery.length > 0) {
+          const signalsMap = await generateAISignals(narrativesToQuery);
+          scoredNarratives.slice(0, 5).forEach(sn => {
+            const key = sn.name;
+            if (signalsMap[key]) {
+              sn.signal = signalsMap[key];
             }
-          } catch (err: any) {
-            console.warn(`⚠️ Failed to generate AI signal for narrative ${sn.name}:`, err.message);
-          }
+          });
         }
-      });
-      await Promise.allSettled(signalPromises);
+      } catch (err: any) {
+        console.warn('⚠️ AI signals cascade failed:', err.message);
+      }
     }
 
     // 8. FORMAT REPORT HTML
     const completedAt = new Date();
-    const reportHtml = formatTelegramReport(completedAt, classifiedTokens.length, scoredNarratives, collectorStatus.status);
+    const reportHtml = formatTelegramReport(completedAt, tokens.length, scoredNarratives, collectorStatus.status);
 
     // 9. PERSIST DETAILS TO DATABASE
     // Insert meta snapshots
