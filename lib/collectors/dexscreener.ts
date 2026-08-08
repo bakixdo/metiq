@@ -1,4 +1,5 @@
 import { getEnv } from '../config/env';
+import { cacheGet, cacheSet } from '../database/redis';
 
 export interface DexScreenerToken {
   chain: string;
@@ -139,39 +140,58 @@ export async function collectMarketData(): Promise<{
     }
   };
 
-  // 1. Fetch Discovery Feeds concurrently
+  // 1. Fetch Discovery Feeds (cached for 5 minutes)
   try {
-    const feeds = await Promise.allSettled([
-      fetchWithRetry('https://api.dexscreener.com/token-boosts/latest/v1'),
-      fetchWithRetry('https://api.dexscreener.com/token-boosts/top/v1'),
-      fetchWithRetry('https://api.dexscreener.com/token-profiles/latest/v1')
-    ]);
+    let latestBoosts: any[] = [];
+    let topBoosts: any[] = [];
+    let latestProfiles: any[] = [];
 
-    const latestBoosts = feeds[0].status === 'fulfilled' ? feeds[0].value : [];
-    const topBoosts = feeds[1].status === 'fulfilled' ? feeds[1].value : [];
-    const latestProfiles = feeds[2].status === 'fulfilled' ? feeds[2].value : [];
+    const cachedFeeds = await cacheGet<{ latestBoosts: any[]; topBoosts: any[]; latestProfiles: any[] }>(
+      'metiq:dexscreener:feeds'
+    );
 
-    const failures = feeds.filter(f => f.status === 'rejected');
-    if (failures.length === 3) {
-      // All discovery endpoints failed
-      dexscreenerStatus = 'outage';
-      const errors = failures.map(f => (f as PromiseRejectedResult).reason.message).join('; ');
-      errorSummary = `All DexScreener discovery feeds failed: ${errors}`;
-      return {
-        tokens: [],
-        status: {
-          status: dexscreenerStatus,
-          errorSummary,
-          boostsCount: 0,
-          profilesCount: 0,
-          totalCandidates: 0,
-          filteredCandidates: 0,
-        }
-      };
-    } else if (failures.length > 0) {
-      dexscreenerStatus = 'degraded';
-      const errors = failures.map(f => (f as PromiseRejectedResult).reason.message).join('; ');
-      errorSummary = `Some discovery feeds failed: ${errors}`;
+    if (cachedFeeds) {
+      console.log('🔌 Loading DexScreener discovery feeds from Redis cache...');
+      latestBoosts = cachedFeeds.latestBoosts || [];
+      topBoosts = cachedFeeds.topBoosts || [];
+      latestProfiles = cachedFeeds.latestProfiles || [];
+    } else {
+      console.log('🔍 DexScreener cache miss. Requesting fresh discovery feeds...');
+      const feeds = await Promise.allSettled([
+        fetchWithRetry('https://api.dexscreener.com/token-boosts/latest/v1'),
+        fetchWithRetry('https://api.dexscreener.com/token-boosts/top/v1'),
+        fetchWithRetry('https://api.dexscreener.com/token-profiles/latest/v1')
+      ]);
+
+      latestBoosts = feeds[0].status === 'fulfilled' ? feeds[0].value : [];
+      topBoosts = feeds[1].status === 'fulfilled' ? feeds[1].value : [];
+      latestProfiles = feeds[2].status === 'fulfilled' ? feeds[2].value : [];
+
+      const failures = feeds.filter(f => f.status === 'rejected');
+      if (failures.length === 3) {
+        // All discovery endpoints failed
+        dexscreenerStatus = 'outage';
+        const errors = failures.map(f => (f as PromiseRejectedResult).reason.message).join('; ');
+        errorSummary = `All DexScreener discovery feeds failed: ${errors}`;
+        return {
+          tokens: [],
+          status: {
+            status: dexscreenerStatus,
+            errorSummary,
+            boostsCount: 0,
+            profilesCount: 0,
+            totalCandidates: 0,
+            filteredCandidates: 0,
+          }
+        };
+      } else if (failures.length > 0) {
+        dexscreenerStatus = 'degraded';
+        const errors = failures.map(f => (f as PromiseRejectedResult).reason.message).join('; ');
+        errorSummary = `Some discovery feeds failed: ${errors}`;
+      }
+
+      // Cache the raw discovery feed lists
+      await cacheSet('metiq:dexscreener:feeds', { latestBoosts, topBoosts, latestProfiles }, 300);
     }
 
     // Process items
@@ -238,16 +258,57 @@ export async function collectMarketData(): Promise<{
     const batchSize = 30;
     for (let i = 0; i < candidates.length; i += batchSize) {
       const batch = candidates.slice(i, i + batchSize);
-      const addresses = batch.map(c => c.tokenAddress).join(',');
-      const url = `https://api.dexscreener.com/tokens/v1/${chainId}/${addresses}`;
 
       queryPromises.push((async () => {
         try {
-          const pairsData = await fetchWithRetry(url, {}, 2, 300, 6000);
-          if (Array.isArray(pairsData)) {
+          // Check Redis cache for candidates in this batch first
+          const cachedPairs: any[] = [];
+          const uncachedCandidates: typeof batch = [];
+
+          await Promise.all(batch.map(async (cand) => {
+            const cacheKey = `metiq:token:${chainId}:${cand.tokenAddress.toLowerCase()}`;
+            const cached = await cacheGet<any[]>(cacheKey);
+            if (cached) {
+              cachedPairs.push(...cached);
+            } else {
+              uncachedCandidates.push(cand);
+            }
+          }));
+
+          let fetchedPairs: any[] = [];
+          if (uncachedCandidates.length > 0) {
+            const uncachedAddresses = uncachedCandidates.map(c => c.tokenAddress).join(',');
+            const url = `https://api.dexscreener.com/tokens/v1/${chainId}/${uncachedAddresses}`;
+            const pairsData = await fetchWithRetry(url, {}, 2, 300, 6000);
+
+            if (Array.isArray(pairsData)) {
+              fetchedPairs = pairsData;
+
+              // Group fetched pairs by token address to cache them
+              const fetchedMap = new Map<string, any[]>();
+              pairsData.forEach((pair: any) => {
+                if (!pair.baseToken?.address) return;
+                const address = pair.baseToken.address.toLowerCase();
+                const list = fetchedMap.get(address) || [];
+                list.push(pair);
+                fetchedMap.set(address, list);
+              });
+
+              // Cache each token's pairs individually
+              await Promise.all(uncachedCandidates.map(async (cand) => {
+                const addressKey = cand.tokenAddress.toLowerCase();
+                const pairs = fetchedMap.get(addressKey) || [];
+                const cacheKey = `metiq:token:${chainId}:${addressKey}`;
+                await cacheSet(cacheKey, pairs, 300); // cache for 5 minutes (even if empty to prevent spamming dead tokens)
+              }));
+            }
+          }
+
+          const combinedPairs = [...cachedPairs, ...fetchedPairs];
+          if (combinedPairs.length > 0) {
             // Group returned pairs by token address
             const tokenPairsMap = new Map<string, any[]>();
-            pairsData.forEach((pair: any) => {
+            combinedPairs.forEach((pair: any) => {
               if (!pair.baseToken?.address) return;
               const address = pair.baseToken.address.toLowerCase();
               const list = tokenPairsMap.get(address) || [];

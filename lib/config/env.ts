@@ -12,6 +12,8 @@ const envSchema = z.object({
   MAX_SCAN_CANDIDATES: z.coerce.number().default(150),
   MANUAL_SCAN_COOLDOWN_SECONDS: z.coerce.number().default(120),
   GROQ_API_KEY: z.string().optional().or(z.literal('')),
+  UPSTASH_REDIS_REST_URL: z.string().url().optional().or(z.literal('')),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional().or(z.literal('')),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -33,6 +35,8 @@ export function getEnv(): Env {
     MAX_SCAN_CANDIDATES: process.env.MAX_SCAN_CANDIDATES,
     MANUAL_SCAN_COOLDOWN_SECONDS: process.env.MANUAL_SCAN_COOLDOWN_SECONDS,
     GROQ_API_KEY: process.env.GROQ_API_KEY,
+    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
 
   if (!result.success) {
@@ -48,6 +52,8 @@ export function getEnv(): Env {
       MAX_SCAN_CANDIDATES: Number(process.env.MAX_SCAN_CANDIDATES) || 150,
       MANUAL_SCAN_COOLDOWN_SECONDS: Number(process.env.MANUAL_SCAN_COOLDOWN_SECONDS) || 120,
       GROQ_API_KEY: process.env.GROQ_API_KEY || '',
+      UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL || '',
+      UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN || '',
     };
   }
 
@@ -68,6 +74,8 @@ export function validateEnv(): Env {
     MAX_SCAN_CANDIDATES: process.env.MAX_SCAN_CANDIDATES,
     MANUAL_SCAN_COOLDOWN_SECONDS: process.env.MANUAL_SCAN_COOLDOWN_SECONDS,
     GROQ_API_KEY: process.env.GROQ_API_KEY,
+    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
 
   if (!result.success) {

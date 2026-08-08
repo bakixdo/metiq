@@ -5,6 +5,7 @@ import { scoreNarratives, ScoredNarrative } from '../scoring/engine';
 import { formatTelegramReport } from '../reports/formatter';
 import { getEnv } from '../config/env';
 import { classifyTokensWithAI, generateAISignals } from '../classification/ai';
+import { cacheSet } from '../database/redis';
 
 export interface ScanResult {
   scanId: string;
@@ -277,6 +278,9 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
       .eq('id', scanId);
 
     if (updateErr) throw updateErr;
+
+    // Cache the completed report in Redis for 5 minutes
+    await cacheSet('metiq:latest_report', reportHtml, 300);
 
     return {
       scanId,

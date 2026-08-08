@@ -5,6 +5,7 @@ import { getDb } from '@/lib/database/db';
 import { runScan } from '@/lib/scanning/runner';
 import { sendTelegramMessage, editTelegramMessage, answerCallbackQuery, escapeHtml } from '@/lib/telegram/bot';
 import { formatUtcDate } from '@/lib/reports/formatter';
+import { cacheGet, cacheSet } from '@/lib/database/redis';
 
 export const dynamic = 'force-dynamic';
 
@@ -149,7 +150,15 @@ async function handleMessage(chatId: string, text: string, supabase: any) {
     }
 
     case '/latest': {
-      // Return the most recently completed report
+      // Check cache first
+      const cachedReport = await cacheGet<string>('metiq:latest_report');
+      if (cachedReport) {
+        console.log('🔌 Serving latest report from Redis cache...');
+        await sendTelegramMessage(chatId, cachedReport);
+        break;
+      }
+
+      // Fallback to database
       const { data: latestScan } = await supabase
         .from('scans')
         .select('report_html')
@@ -158,7 +167,10 @@ async function handleMessage(chatId: string, text: string, supabase: any) {
         .limit(1);
 
       if (latestScan && latestScan.length > 0 && latestScan[0].report_html) {
-        await sendTelegramMessage(chatId, latestScan[0].report_html);
+        const report = latestScan[0].report_html;
+        await sendTelegramMessage(chatId, report);
+        // Cache in Redis for subsequent requests
+        await cacheSet('metiq:latest_report', report, 300);
       } else {
         await sendTelegramMessage(chatId, '📭 <i>No reports stored yet. Run /meta to execute a fresh scan.</i>');
       }
