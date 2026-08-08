@@ -103,8 +103,32 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 4. Check Groq AI Connectivity if API key is present
-  if (env.GROQ_API_KEY) {
+  // 4. Check AI Connectivity (Grok or Groq API)
+  if (env.GROK_API_KEY) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s timeout
+    try {
+      const res = await fetch('https://api.x.ai/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${env.GROK_API_KEY}`,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (res.status === 401 || res.status === 403) {
+        uptime.groq = 'outage';
+      } else if (!res.ok) {
+        uptime.groq = 'degraded';
+      } else {
+        uptime.groq = 'operational';
+      }
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      console.warn('Health Check: Grok models check failed or timed out:', err.message);
+      uptime.groq = 'degraded';
+    }
+  } else if (env.GROQ_API_KEY) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s timeout
     try {

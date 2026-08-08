@@ -14,6 +14,7 @@ const envSchema = z.object({
   GROQ_API_KEY: z.string().optional().or(z.literal('')),
   UPSTASH_REDIS_REST_URL: z.string().url().optional().or(z.literal('')),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional().or(z.literal('')),
+  GROK_API_KEY: z.string().optional().or(z.literal('')),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -54,6 +55,7 @@ export function getEnv(): Env {
       GROQ_API_KEY: process.env.GROQ_API_KEY || '',
       UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL || '',
       UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+      GROK_API_KEY: process.env.GROK_API_KEY || '',
     };
   }
 
@@ -76,6 +78,7 @@ export function validateEnv(): Env {
     GROQ_API_KEY: process.env.GROQ_API_KEY,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    GROK_API_KEY: process.env.GROK_API_KEY,
   });
 
   if (!result.success) {

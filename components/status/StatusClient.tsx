@@ -269,14 +269,14 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
             </div>
           </div>
 
-          {/* Service: Groq AI Engine */}
+          {/* Service: Grok AI Engine */}
           <div className="p-5 rounded border border-border-custom bg-card-custom/40 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded bg-zinc-800/50 flex items-center justify-center text-zinc-400">
                 <Brain size={18} />
               </div>
               <div>
-                <h3 className="font-mono text-sm font-bold">Groq AI Engine</h3>
+                <h3 className="font-mono text-sm font-bold">Grok AI Engine</h3>
                 <span className="text-[10px] text-muted-custom font-mono">Narrative analysis</span>
               </div>
             </div>

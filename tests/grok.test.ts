@@ -6,7 +6,7 @@ describe('Unified AI Cascade Integration Tests', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    process.env = { ...originalEnv, GROQ_API_KEY: 'gsk_mock_api_key_for_testing' };
+    process.env = { ...originalEnv, GROK_API_KEY: 'xai_mock_api_key_for_testing' };
   });
 
   afterEach(() => {
@@ -47,7 +47,7 @@ describe('Unified AI Cascade Integration Tests', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(result.classifications['0x123456789']).toBe('AI Agents');
     expect(result.classifications['0xabcdef']).toBe('DePIN');
-    expect(result.provider).toBe('Groq');
+    expect(result.provider).toBe('Grok');
   });
 
   test('generateAISignals requests and returns batch signals map object', async () => {
