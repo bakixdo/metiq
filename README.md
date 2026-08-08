@@ -1,4 +1,4 @@
-# METIQ — Crypto Meta Intelligence
+# METIQ - Crypto Meta Intelligence
 
 METIQ is a lightweight, production-ready MVP designed to detect emerging cryptocurrency narratives (“metas”) from decentralized exchanges. The system is centered around a Telegram bot interface, supported by a public landing page and a real-time status monitor.
 
