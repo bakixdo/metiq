@@ -53,7 +53,7 @@ Strictly follow categories. Do not include markdown, explanations, or code block
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'grok-beta',
+      model: 'grok-latest',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: JSON.stringify(compactTokens) },
@@ -107,7 +107,7 @@ Keep signals short, direct, and professional. Do not write markdown or code bloc
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'grok-beta',
+      model: 'grok-latest',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: JSON.stringify(narratives) },
