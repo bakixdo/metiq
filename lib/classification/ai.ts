@@ -137,23 +137,21 @@ export const AI_PROVIDERS: AIProvider[] = [
   },
 ];
 
-/**
- * Classifies tokens using the first enabled AI provider.
- */
 export async function classifyTokensWithAI(
   tokens: Array<{ address: string; symbol: string; name: string; description: string }>
-): Promise<Record<string, string>> {
+): Promise<{ classifications: Record<string, string>; provider: string | null }> {
   for (const provider of AI_PROVIDERS) {
     if (provider.isEnabled()) {
       try {
         console.log(`🤖 Requesting AI classifications from: ${provider.name}`);
-        return await provider.classify(tokens);
+        const classifications = await provider.classify(tokens);
+        return { classifications, provider: provider.name };
       } catch (err: any) {
         console.warn(`⚠️ AI Provider ${provider.name} failed:`, err.message);
       }
     }
   }
-  return {};
+  return { classifications: {}, provider: null };
 }
 
 /**

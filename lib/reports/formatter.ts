@@ -56,7 +56,8 @@ export function formatTelegramReport(
   completedAt: Date,
   coinsScanned: number,
   narratives: ScoredNarrative[],
-  dexScreenerStatus: 'operational' | 'degraded' | 'outage'
+  dexScreenerStatus: 'operational' | 'degraded' | 'outage',
+  aiProviderUsed?: string | null
 ): string {
   const dateStr = formatUtcDate(completedAt);
   
@@ -92,7 +93,8 @@ export function formatTelegramReport(
 
   // Footer status, commands, and disclaimer
   const statusIndicator = dexScreenerStatus === 'operational' ? 'OK' : dexScreenerStatus.toUpperCase();
-  report += `Data source: DexScreener (${statusIndicator})\n`;
+  const aiSuffix = aiProviderUsed ? ` · AI: ${aiProviderUsed}` : '';
+  report += `Data source: DexScreener (${statusIndicator})${aiSuffix}\n`;
   report += `Request fresh scan: /meta\n\n`;
   report += `<i>Informational signals, not financial advice.</i>`;
 

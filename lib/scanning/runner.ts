@@ -133,9 +133,12 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
 
     // 5. CLASSIFY TOKENS (Hybrid AI + Keyword Taxonomy)
     let aiClassifications: Record<string, string> = {};
+    let aiProviderUsed: string | null = null;
     try {
       console.log('🤖 Triggering AI classification cascade...');
-      aiClassifications = await classifyTokensWithAI(topTokens);
+      const aiResult = await classifyTokensWithAI(topTokens);
+      aiClassifications = aiResult.classifications;
+      aiProviderUsed = aiResult.provider;
     } catch (err: any) {
       console.warn('⚠️ AI classification cascade failed, falling back to taxonomy matching:', err.message);
     }
@@ -218,7 +221,7 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
 
     // 8. FORMAT REPORT HTML
     const completedAt = new Date();
-    const reportHtml = formatTelegramReport(completedAt, tokens.length, scoredNarratives, collectorStatus.status);
+    const reportHtml = formatTelegramReport(completedAt, tokens.length, scoredNarratives, collectorStatus.status, aiProviderUsed);
 
     // 9. PERSIST DETAILS TO DATABASE
     // Insert meta snapshots

@@ -45,8 +45,9 @@ describe('Unified AI Cascade Integration Tests', () => {
     const result = await classifyTokensWithAI(tokens);
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(result['0x123456789']).toBe('AI Agents');
-    expect(result['0xabcdef']).toBe('DePIN');
+    expect(result.classifications['0x123456789']).toBe('AI Agents');
+    expect(result.classifications['0xabcdef']).toBe('DePIN');
+    expect(result.provider).toBe('Groq');
   });
 
   test('generateAISignals requests and returns batch signals map object', async () => {

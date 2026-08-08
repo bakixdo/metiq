@@ -66,4 +66,10 @@ describe('Formatting and Splitting Utility Tests', () => {
     expect(htmlReport).toContain('Data source: DexScreener (OK)');
     expect(htmlReport).toContain('Request fresh scan: /meta');
   });
+
+  test('formatTelegramReport includes AI provider suffix if provided', () => {
+    const completedAt = new Date();
+    const htmlReport = formatTelegramReport(completedAt, 10, [], 'operational', 'Groq');
+    expect(htmlReport).toContain('Data source: DexScreener (OK) · AI: Groq');
+  });
 });
