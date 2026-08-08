@@ -84,68 +84,74 @@ export function scoreNarratives(
 
     const avgPriceChange6h = totalPriceChange6h / coinCount;
 
+    // --- Quantitative Mathematical Models ---
+
+    // 1. Calculate Herfindahl-Hirschman Index (HHI) for market concentration
+    let hhi = 0;
+    if (totalVolume6h > 0) {
+      narrativeTokens.forEach(t => {
+        const share = t.volume_6h / totalVolume6h;
+        hhi += share * share;
+      });
+    }
+
+    // 2. Calculate Shannon Entropy for narrative breadth & diversity
+    let entropy = 0;
+    if (totalVolume6h > 0) {
+      narrativeTokens.forEach(t => {
+        const share = t.volume_6h / totalVolume6h;
+        if (share > 0) {
+          entropy -= share * Math.log2(share);
+        }
+      });
+    }
+
     // --- Scoring Components (Max 100 points) ---
 
-    // 1. 6H Volume (25 pts)
+    // 1. 6H Volume (40 pts)
     // Log scale from $1,000 to $10,000,000
     const logVol = Math.log10(Math.max(1, totalVolume6h));
-    const volumePoints = Math.min(25, Math.max(0, (logVol - 3) / (7 - 3) * 25));
+    const volumePoints = Math.min(40, Math.max(0, (logVol - 3) / (7 - 3) * 40));
 
-    // 2. Breadth (20 pts)
-    // 10+ coins gives full points
-    const breadthPoints = Math.min(20, (coinCount / 10) * 20);
+    // 2. Breadth (Shannon Entropy) (20 pts)
+    // Entropy of 2.0+ gives full points
+    const breadthPoints = Math.min(20, entropy * 10);
 
-    // 3. Liquidity Quality (15 pts)
+    // 3. Liquidity Depth (20 pts)
     // Log scale from $5,000 to $5,000,000
     const logLiq = Math.log10(Math.max(1, totalLiquidity));
-    const liquidityPoints = Math.min(15, Math.max(0, (logLiq - 3.7) / (6.7 - 3.7) * 15));
+    const liquidityPoints = Math.min(20, Math.max(0, (logLiq - 3.7) / (6.7 - 3.7) * 20));
 
-    // 4. Transaction Momentum (15 pts)
-    // Log scale from 100 to 100,000 estimated txns
-    const logTxns = Math.log10(Math.max(1, totalTxns6h));
-    const momentumPoints = Math.min(15, Math.max(0, (logTxns - 2) / (5 - 2) * 15));
+    // 4. Momentum (20 pts)
+    // Exponential velocity compared with previous snapshot or fallback to 1H/6H ratio
+    let momentumPoints = 0;
+    const prev = previousSnapshots[narrativeName];
+    if (prev && prev.volume_6h > 0) {
+      const volChangeRatio = (totalVolume6h - prev.volume_6h) / prev.volume_6h;
+      if (volChangeRatio > 0) {
+        momentumPoints = Math.min(20, volChangeRatio * 10); // 200% volume increase gets full 20 pts
+      }
+    } else {
+      const volRatio = totalVolume6h > 0 ? (totalVolume1h / totalVolume6h) : 0;
+      momentumPoints = Math.min(20, (volRatio / 0.25) * 20); // 25%+ in last hour gets full 20 pts
+    }
 
-    // 5. Price and Volume Acceleration (10 pts)
-    // Volume acceleration (5 pts): ratio of 1H to 6H volume (expected ratio 1/6 ~ 0.16)
-    const volRatio = totalVolume6h > 0 ? (totalVolume1h / totalVolume6h) : 0;
-    let volAccelPoints = 0;
-    if (volRatio >= 0.25) volAccelPoints = 5;
-    else if (volRatio >= 0.16) volAccelPoints = 3;
-    else if (volRatio >= 0.10) volAccelPoints = 1.5;
-
-    // Price acceleration (5 pts): based on avg 6H price increase
-    let priceAccelPoints = 0;
-    if (avgPriceChange6h > 20) priceAccelPoints = 5;
-    else if (avgPriceChange6h > 5) priceAccelPoints = 3;
-    else if (avgPriceChange6h > 0) priceAccelPoints = 1;
-
-    const accelerationPoints = volAccelPoints + priceAccelPoints;
-
-    // 6. Fresh Launches (10 pts)
-    // 4+ fresh launches gets 10 points
-    const freshPoints = Math.min(10, freshLaunches * 2.5);
-
-    // 7. Data Quality (5 pts)
-    // Fraction of coins with metadata
-    const metadataRatio = coinCount > 0 ? (itemsWithMetadata / coinCount) : 0;
-    const dataQualityPoints = metadataRatio * 5;
-
-    let baseScore = volumePoints + breadthPoints + liquidityPoints + momentumPoints + accelerationPoints + freshPoints + dataQualityPoints;
+    let baseScore = volumePoints + breadthPoints + liquidityPoints + momentumPoints;
     let score = Math.round(baseScore);
 
-    // --- Penalties & Warnings ---
+    // --- Progressive Penalties & Warnings ---
     const warnings: string[] = [];
 
     // Sort tokens by volume 6h to find the leader
     const sortedByVol = [...narrativeTokens].sort((a, b) => b.volume_6h - a.volume_6h);
-    const topCoinVolume = sortedByVol[0]?.volume_6h || 0;
 
-    // Concentration penalty: driven by only one token
+    // Concentration penalty (HHI)
     if (coinCount === 1) {
-      score -= 15;
+      score -= 25;
       warnings.push('Narrative is driven by only one coin.');
-    } else if (coinCount > 1 && (topCoinVolume / (totalVolume6h || 1)) > 0.75) {
-      score -= 15;
+    } else if (coinCount > 1 && hhi > 0.4) {
+      const hhiPenalty = Math.round(Math.min(30, (hhi - 0.4) * 50));
+      score -= hhiPenalty;
       warnings.push(`Narrative currently depends heavily on one coin: ${sortedByVol[0].symbol}.`);
     }
 
@@ -155,10 +161,12 @@ export function scoreNarratives(
       warnings.push('Extremely low liquidity. High risk of slippage.');
     }
 
-    // Volume disproportionately high compared with liquidity
-    if (totalVolume6h > totalLiquidity * 5 && totalLiquidity > 0) {
-      score -= 15;
-      warnings.push('Volume is disproportionately high compared to liquidity, indicating potential wash trading or extreme volatility.');
+    // Wash trading penalty: progressive V/L ratio penalty
+    const vlRatio = totalLiquidity > 0 ? (totalVolume6h / totalLiquidity) : 0;
+    if (vlRatio > 4 && totalLiquidity > 0) {
+      const vlPenalty = Math.round(Math.min(40, (vlRatio - 4) * 10));
+      score -= vlPenalty;
+      warnings.push(`Volume is disproportionately high compared to liquidity, indicating potential wash trading or extreme volatility.`);
     }
 
     // Heavy dependence on boosted tokens
@@ -173,6 +181,7 @@ export function scoreNarratives(
     }
 
     // Missing or unreliable metadata
+    const metadataRatio = coinCount > 0 ? (itemsWithMetadata / coinCount) : 0;
     if (metadataRatio < 0.5) {
       score -= 5;
       warnings.push('Missing or unreliable metadata.');
@@ -188,7 +197,6 @@ export function scoreNarratives(
     score = Math.max(0, Math.min(100, score));
 
     // --- Score Change & Stage Classification ---
-    const prev = previousSnapshots[narrativeName];
     const scoreChange = prev ? (score - prev.score) : 0;
 
     let stage: ScoredNarrative['stage'] = 'Weak';
