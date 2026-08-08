@@ -9,8 +9,8 @@ export interface ScoredNarrative {
   liquidity: number;
   coin_count: number;
   score_change: number;
+  leaders: Array<{ symbol: string; chain: string; address: string }>;
   warnings: string[];
-  leaders: string[];
   signal?: string;
 }
 
@@ -207,7 +207,11 @@ export function scoreNarratives(
     }
 
     // Leaders: top 3 coins by 6H volume
-    const leaders = sortedByVol.slice(0, 3).map(t => `$${t.symbol.replace('$', '').toUpperCase()}`);
+    const leaders = sortedByVol.slice(0, 3).map(t => ({
+      symbol: t.symbol.replace('$', '').toUpperCase(),
+      chain: t.chain,
+      address: t.address,
+    }));
 
     scoredNarratives.push({
       name: narrativeName,

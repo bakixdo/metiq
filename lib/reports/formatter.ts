@@ -43,9 +43,25 @@ function getDefaultSignal(stage: string): string {
     case 'Crowded':
       return 'High participation with significant volume, watch for consolidation.';
     case 'Cooling':
-      return 'Activity is decreasing and momentum is slowing.';
+      return 'Narrative steam is slowing down as volume subsides.';
     default:
-      return 'Monitor narrative for further volume confirmation.';
+      return 'Stable meta indicators detected.';
+  }
+}
+
+/**
+ * Returns an emoji flag mapping for each narrative stage.
+ */
+function getStageEmoji(stage: string): string {
+  switch (stage) {
+    case 'Accelerating': return '🔥';
+    case 'Crowded': return '🚨';
+    case 'Cooling': return '❄️';
+    case 'Emerging': return '🟢';
+    case 'Forming': return '🟡';
+    case 'Weak':
+    default:
+      return '⚪';
   }
 }
 
@@ -70,24 +86,34 @@ export function formatTelegramReport(
   const topNarratives = narratives.slice(0, 5);
 
   topNarratives.forEach((nar, index) => {
-    // Arrow based on score change
-    let arrow = '';
-    if (nar.score_change > 0) arrow = ' ↑';
-    else if (nar.score_change < 0) arrow = ' ↓';
+    // Show exact delta change
+    let changeText = '';
+    if (nar.score_change > 0) changeText = ` (+${nar.score_change})`;
+    else if (nar.score_change < 0) changeText = ` (${nar.score_change})`;
+
+    const emoji = getStageEmoji(nar.stage);
+    const vlRatio = (nar.volume_6h / Math.max(1, nar.liquidity)).toFixed(2);
     
-    report += `<b>${index + 1}. ${escapeHtml(nar.name)} - ${nar.score}/100${arrow}</b>\n\n`;
-    report += `Stage: ${escapeHtml(nar.stage)}\n`;
+    report += `<b>${index + 1}. ${escapeHtml(nar.name)} - ${nar.score}/100${changeText} ${emoji}</b>\n\n`;
+    report += `Stage: <b>${escapeHtml(nar.stage)}</b>\n`;
     report += `6H Volume: ${formatCurrency(nar.volume_6h)}\n`;
     report += `Liquidity: ${formatCurrency(nar.liquidity)}\n`;
+    report += `V/L Ratio: <b>${vlRatio}x</b>\n`;
     report += `Active Coins: ${nar.coin_count}\n`;
-    report += `Leaders: ${escapeHtml(nar.leaders.join(' · '))}\n`;
+
+    const leaderLinks = nar.leaders.map(l => {
+      const sym = escapeHtml(l.symbol);
+      const url = `https://dexscreener.com/${l.chain.toLowerCase()}/${l.address.toLowerCase()}`;
+      return `<a href="${url}">${sym}</a>`;
+    });
+    report += `Leaders: ${leaderLinks.join(' · ')}\n`;
 
     // Warnings vs Signals
     if (nar.warnings && nar.warnings.length > 0) {
-      report += `Warning: ${escapeHtml(nar.warnings.join(' · '))}\n\n`;
+      report += `Warning: <i>${escapeHtml(nar.warnings.join(' · '))}</i>\n\n`;
     } else {
       const signalText = nar.signal || getDefaultSignal(nar.stage);
-      report += `Signal: ${escapeHtml(signalText)}\n\n`;
+      report += `Signal: <i>${escapeHtml(signalText)}</i>\n\n`;
     }
   });
 

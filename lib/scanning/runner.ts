@@ -199,7 +199,7 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
           .filter(sn => sn.warnings.length === 0)
           .map(sn => ({
             name: sn.name,
-            leaders: sn.leaders,
+            leaders: sn.leaders.map(l => '$' + l.symbol),
             volume: sn.volume_6h,
             liquidity: sn.liquidity,
             coins: sn.coin_count,

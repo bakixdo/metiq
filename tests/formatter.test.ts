@@ -47,7 +47,11 @@ describe('Formatting and Splitting Utility Tests', () => {
         coin_count: 12,
         score_change: 4,
         warnings: [],
-        leaders: ['$AAA', '$BBB', '$CCC'],
+        leaders: [
+          { symbol: 'AAA', chain: 'solana', address: '0x111' },
+          { symbol: 'BBB', chain: 'solana', address: '0x222' },
+          { symbol: 'CCC', chain: 'solana', address: '0x333' }
+        ],
       },
     ];
 
@@ -56,13 +60,14 @@ describe('Formatting and Splitting Utility Tests', () => {
     expect(htmlReport).toContain('METIQ - 6H META REPORT');
     expect(htmlReport).toContain('Updated: 8 Aug 2026, 12:00 UTC');
     expect(htmlReport).toContain('Coins scanned: 126');
-    expect(htmlReport).toContain('1. AI Compute - 84/100 ↑');
-    expect(htmlReport).toContain('Stage: Accelerating');
+    expect(htmlReport).toContain('1. AI Compute - 84/100 (+4) 🔥');
+    expect(htmlReport).toContain('Stage: <b>Accelerating</b>');
     expect(htmlReport).toContain('6H Volume: $4.82M');
     expect(htmlReport).toContain('Liquidity: $1.21M');
+    expect(htmlReport).toContain('V/L Ratio: <b>3.98x</b>');
     expect(htmlReport).toContain('Active Coins: 12');
-    expect(htmlReport).toContain('Leaders: $AAA · $BBB · $CCC');
-    expect(htmlReport).toContain('Signal: Volume and market breadth are increasing.');
+    expect(htmlReport).toContain('<a href="https://dexscreener.com/solana/0x111">AAA</a>');
+    expect(htmlReport).toContain('Signal: <i>Volume and market breadth are increasing.</i>');
     expect(htmlReport).toContain('Data source: DexScreener (OK)');
     expect(htmlReport).toContain('Request fresh scan: /meta');
   });

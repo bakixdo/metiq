@@ -41,8 +41,8 @@ describe('Scoring and Penalty Engine Tests', () => {
     expect(aiAgents!.score).toBeGreaterThan(0);
     expect(aiAgents!.score).toBeLessThanOrEqual(100);
     expect(aiAgents!.coin_count).toBe(2);
-    expect(aiAgents!.leaders).toContain('$A1');
-    expect(aiAgents!.leaders).toContain('$A2');
+    expect(aiAgents!.leaders.map(l => l.symbol)).toContain('A1');
+    expect(aiAgents!.leaders.map(l => l.symbol)).toContain('A2');
   });
 
   test('Applies concentration penalty when narrative depends on a single token', () => {
