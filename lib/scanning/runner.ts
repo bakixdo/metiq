@@ -136,8 +136,17 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
       throw new Error(`Market data collection returned zero tokens. Details: ${collectorStatus.errorSummary || 'No error details'}`);
     }
 
-    // Sort tokens by 6H volume descending and take the top 60 to keep token classification prompts highly compact and save API credits
-    const topTokens = [...tokens].sort((a, b) => b.volume_6h - a.volume_6h).slice(0, 60);
+    // Filter out stablecoins, gas wrapper assets, and extremely low liquidity pools (under $2000) to ensure narrative score accuracy
+    const EXCLUDED_SYMBOLS = new Set(['USDC', 'USDT', 'DAI', 'WETH', 'WSOL', 'WBTC', 'WBNB', 'WCRO', 'FDUSD', 'USDE']);
+    const filteredTokens = tokens.filter(tok => {
+      const sym = tok.symbol.toUpperCase();
+      const hasMinLiquidity = tok.liquidity >= 2000;
+      return !EXCLUDED_SYMBOLS.has(sym) && hasMinLiquidity;
+    });
+
+    // Sort tokens by 6H volume descending and take the top 40 to keep token classification prompts highly compact,
+    // saving API credits and preventing Vercel Hobby serverless timeouts (10s execution limit).
+    const topTokens = [...filteredTokens].sort((a, b) => b.volume_6h - a.volume_6h).slice(0, 40);
 
     // 5. CLASSIFY TOKENS (Hybrid AI + Keyword Taxonomy)
     let aiClassifications: Record<string, string> = {};
