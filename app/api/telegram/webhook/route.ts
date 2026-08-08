@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
         return new Response('OK');
       }
 
-      await handleCallbackQuery(callbackQueryId, data, chatId, messageId, supabase);
+      await handleCallbackQuery(req, callbackQueryId, data, chatId, messageId, supabase);
       return new Response('OK');
     }
 
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
         return new Response('OK');
       }
 
-      await handleMessage(chatId, text, supabase);
+      await handleMessage(req, chatId, text, supabase);
     }
   } catch (err: any) {
     console.error(`Error processing update_id ${updateId}:`, err);
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
 /**
  * Handle standard text commands.
  */
-async function handleMessage(chatId: string, text: string, supabase: any) {
+async function handleMessage(req: NextRequest, chatId: string, text: string, supabase: any) {
   const normalizedText = text.toLowerCase().split(' ')[0]; // Extract command part (e.g. /start@MetiqBot -> /start)
   const command = normalizedText.split('@')[0];
 
@@ -119,33 +119,38 @@ async function handleMessage(chatId: string, text: string, supabase: any) {
     }
 
     case '/meta': {
-      // Run a fresh market scan
+      // Run a fresh market scan.
+      // We respond immediately with the scanning indicator, then process the rest in the background.
       const sentMsg = await sendTelegramMessage(chatId, '🔍 <i>Scanning DexScreener market data for emerging narratives...</i>');
       const messageId = sentMsg.message_id;
 
-      try {
-        const result = await runScan('manual');
-        
-        if (result.status === 'cooldown') {
-          const dateStr = result.completedAt ? formatUtcDate(result.completedAt) : 'recently';
-          const cooldownMsg = `⚠️ <b>Scan Cooldown Active</b>\n\n` +
-            `To prevent DexScreener API rate limits, manual scans are limited. Here is the latest report from ${dateStr} (cooldown expires in ${result.cooldownRemainingSeconds}s):\n\n` +
-            `${result.reportHtml}`;
-          await editTelegramMessage(chatId, messageId, cooldownMsg);
-        } else if (result.status === 'running') {
-          const runningMsg = `⏳ <b>Scan in Progress</b>\n\n` +
-            `Another scanning process is already running. Here is the latest completed report:\n\n` +
-            `${result.reportHtml}`;
-          await editTelegramMessage(chatId, messageId, runningMsg);
-        } else {
-          await editTelegramMessage(chatId, messageId, result.reportHtml || 'Scan completed successfully.');
-        }
-      } catch (err: any) {
-        console.error('Scan command failed:', err);
-        const errorMsg = `❌ <b>Scan Failed</b>\n\n` +
-          `Failed to complete the market scan. ${escapeHtml(err.message || 'Please try again later.')}`;
-        await editTelegramMessage(chatId, messageId, errorMsg);
-      }
+      (req as any).waitUntil(
+        (async () => {
+          try {
+            const result = await runScan('manual');
+            
+            if (result.status === 'cooldown') {
+              const dateStr = result.completedAt ? formatUtcDate(result.completedAt) : 'recently';
+              const cooldownMsg = `⚠️ <b>Scan Cooldown Active</b>\n\n` +
+                `To prevent DexScreener API rate limits, manual scans are limited. Here is the latest report from ${dateStr} (cooldown expires in ${result.cooldownRemainingSeconds}s):\n\n` +
+                `${result.reportHtml}`;
+              await editTelegramMessage(chatId, messageId, cooldownMsg);
+            } else if (result.status === 'running') {
+              const runningMsg = `⏳ <b>Scan in Progress</b>\n\n` +
+                `Another scanning process is already running. Here is the latest completed report:\n\n` +
+                `${result.reportHtml}`;
+              await editTelegramMessage(chatId, messageId, runningMsg);
+            } else {
+              await editTelegramMessage(chatId, messageId, result.reportHtml || 'Scan completed successfully.');
+            }
+          } catch (err: any) {
+            console.error('Background scan failed:', err);
+            const errorMsg = `❌ <b>Scan Failed</b>\n\n` +
+              `Failed to complete the market scan. ${escapeHtml(err.message || 'Please try again later.')}`;
+            await editTelegramMessage(chatId, messageId, errorMsg);
+          }
+        })()
+      );
       break;
     }
 
@@ -283,6 +288,7 @@ async function handleMessage(chatId: string, text: string, supabase: any) {
  * Handle inline button callback queries.
  */
 async function handleCallbackQuery(
+  req: NextRequest,
   callbackQueryId: string,
   data: string,
   chatId: string,
@@ -295,7 +301,7 @@ async function handleCallbackQuery(
   switch (data) {
     case 'scan_meta': {
       // Trigger a manual /meta command logic
-      await handleMessage(chatId, '/meta', supabase);
+      await handleMessage(req, chatId, '/meta', supabase);
       break;
     }
 
@@ -339,7 +345,7 @@ async function handleCallbackQuery(
 
     case 'help_info': {
       // Run /help command
-      await handleMessage(chatId, '/help', supabase);
+      await handleMessage(req, chatId, '/help', supabase);
       break;
     }
 
