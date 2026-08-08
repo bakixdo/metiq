@@ -61,7 +61,7 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
   if (triggerSource === 'manual') {
     const { data: latestScan, error: latestError } = await supabase
       .from('scans')
-      .select('completed_at, report_html, coins_scanned, id')
+      .select('completed_at, report_html, coins_scanned, id, sources')
       .eq('status', 'completed')
       .order('started_at', { ascending: false })
       .limit(1);
@@ -70,7 +70,15 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
       const lastCompletedTime = new Date(latestScan[0].completed_at).getTime();
       const diffSeconds = Math.floor((Date.now() - lastCompletedTime) / 1000);
 
-      if (diffSeconds < cooldownSeconds) {
+      const sources = latestScan[0].sources as any || {};
+      const hadAI = !!sources.aiProvider;
+
+      const env = getEnv();
+      const currentAIConfigured = !!env.GROK_API_KEY || !!env.GROQ_API_KEY;
+
+      // If cooldown is active AND the previous scan successfully used AI (or we don't have AI configured now anyway), enforce the cooldown.
+      // BUT if the previous scan had NO AI (degraded fallback) and we now have an active AI key, we BYPASS the cooldown to get the AI report!
+      if (diffSeconds < cooldownSeconds && (hadAI || !currentAIConfigured)) {
         // Cooldown period active. Fetch meta snapshots for the latest scan to return narrative details
         const { data: snaps } = await supabase
           .from('meta_snapshots')
@@ -276,7 +284,10 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
         completed_at: completedAt.toISOString(),
         coins_scanned: classifiedTokens.length,
         report_html: reportHtml,
-        sources: collectorStatus,
+        sources: {
+          ...collectorStatus,
+          aiProvider: aiProviderUsed,
+        },
       })
       .eq('id', scanId);
 

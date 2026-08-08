@@ -150,9 +150,13 @@ async function handleMessage(chatId: string, text: string, supabase: any) {
     }
 
     case '/latest': {
-      // Check cache first
+      // Check cache first. Bypass it if it is a degraded report (no AI) and we now have an AI key configured.
       const cachedReport = await cacheGet<string>('metiq:latest_report');
-      if (cachedReport) {
+      const env = getEnv();
+      const currentAIConfigured = !!env.GROK_API_KEY || !!env.GROQ_API_KEY;
+      const isCachedReportDegraded = cachedReport && !cachedReport.includes('· AI: ');
+
+      if (cachedReport && !(isCachedReportDegraded && currentAIConfigured)) {
         console.log('🔌 Serving latest report from Redis cache...');
         await sendTelegramMessage(chatId, cachedReport);
         break;
