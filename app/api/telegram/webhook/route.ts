@@ -119,38 +119,77 @@ async function handleMessage(req: NextRequest, chatId: string, text: string, sup
     }
 
     case '/meta': {
-      // Run a fresh market scan.
-      // We respond immediately with the scanning indicator, then process the rest in the background.
-      const sentMsg = await sendTelegramMessage(chatId, '🔍 <i>Scanning DexScreener market data for emerging narratives...</i>');
-      const messageId = sentMsg.message_id;
+      // 1. Check if we have a completed scan in the database
+      const { data: latestScan } = await supabase
+        .from('scans')
+        .select('completed_at, report_html, id, sources')
+        .eq('status', 'completed')
+        .order('started_at', { ascending: false })
+        .limit(1);
 
-      (req as any).waitUntil(
-        (async () => {
-          try {
-            const result = await runScan('manual');
-            
-            if (result.status === 'cooldown') {
-              const dateStr = result.completedAt ? formatUtcDate(result.completedAt) : 'recently';
-              const cooldownMsg = `⚠️ <b>Scan Cooldown Active</b>\n\n` +
-                `To prevent DexScreener API rate limits, manual scans are limited. Here is the latest report from ${dateStr} (cooldown expires in ${result.cooldownRemainingSeconds}s):\n\n` +
-                `${result.reportHtml}`;
-              await editTelegramMessage(chatId, messageId, cooldownMsg);
-            } else if (result.status === 'running') {
-              const runningMsg = `⏳ <b>Scan in Progress</b>\n\n` +
-                `Another scanning process is already running. Here is the latest completed report:\n\n` +
-                `${result.reportHtml}`;
-              await editTelegramMessage(chatId, messageId, runningMsg);
-            } else {
+      const hasScan = latestScan && latestScan.length > 0;
+      
+      if (!hasScan) {
+        // Case A: No data is available in the database yet.
+        // We must show the scanning loader and run synchronously in the background.
+        const sentMsg = await sendTelegramMessage(chatId, '🔍 <i>No cached scans found. Initiating full market scan (takes ~8s)...</i>');
+        const messageId = sentMsg.message_id;
+
+        (req as any).waitUntil(
+          (async () => {
+            try {
+              const result = await runScan('manual');
               await editTelegramMessage(chatId, messageId, result.reportHtml || 'Scan completed successfully.');
+            } catch (err: any) {
+              console.error('Background initial scan failed:', err);
+              await editTelegramMessage(chatId, messageId, `❌ <b>Scan Failed</b>\n\nFailed to complete the market scan: ${escapeHtml(err.message || 'Please try again later.')}`);
             }
-          } catch (err: any) {
-            console.error('Background scan failed:', err);
-            const errorMsg = `❌ <b>Scan Failed</b>\n\n` +
-              `Failed to complete the market scan. ${escapeHtml(err.message || 'Please try again later.')}`;
-            await editTelegramMessage(chatId, messageId, errorMsg);
-          }
-        })()
-      );
+          })()
+        );
+        break;
+      }
+
+      // Case B: We have a completed scan in the database.
+      // Check if the cooldown is active.
+      const lastCompletedTime = new Date(latestScan[0].completed_at).getTime();
+      const diffSeconds = Math.floor((Date.now() - lastCompletedTime) / 1000);
+      const cooldownSeconds = 120; // 2 minutes
+
+      const sources = latestScan[0].sources as any || {};
+      const hadAI = !!sources.aiProvider;
+      const env = getEnv();
+      const currentAIConfigured = !!env.GROK_API_KEY || !!env.GROQ_API_KEY;
+
+      const isCooldownActive = diffSeconds < cooldownSeconds && (hadAI || !currentAIConfigured);
+
+      if (isCooldownActive) {
+        // Cooldown is active. Just serve the existing cached report immediately!
+        const dateStr = formatUtcDate(new Date(latestScan[0].completed_at));
+        const remaining = cooldownSeconds - diffSeconds;
+        const cooldownMsg = `${latestScan[0].report_html}\n\n<i>⚠️ Cooldown active. Refresh available in ${remaining}s.</i>`;
+        await sendTelegramMessage(chatId, cooldownMsg);
+      } else {
+        // Cooldown has expired. We should serve the existing cached report IMMEDIATELY,
+        // and trigger a background refresh to revalidate data!
+        const existingReport = latestScan[0].report_html;
+        const initialMsg = `${existingReport}\n\n🔄 <i>Revalidating & refreshing market data in background...</i>`;
+        const sentMsg = await sendTelegramMessage(chatId, initialMsg);
+        const messageId = sentMsg.message_id;
+
+        (req as any).waitUntil(
+          (async () => {
+            try {
+              const result = await runScan('manual');
+              // Edit the message with the fresh report once completed!
+              await editTelegramMessage(chatId, messageId, result.reportHtml || 'Scan completed.');
+            } catch (err: any) {
+              console.error('Background revalidation scan failed:', err);
+              // Do not overwrite the existing message on background failure, just revert the loading suffix
+              await editTelegramMessage(chatId, messageId, existingReport);
+            }
+          })()
+        );
+      }
       break;
     }
 
