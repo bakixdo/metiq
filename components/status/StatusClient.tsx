@@ -14,7 +14,8 @@ import {
   Bot, 
   Compass, 
   History,
-  Radar
+  Radar,
+  Brain
 } from 'lucide-react';
 import { formatUtcDate, formatCurrency } from '@/lib/reports/formatter';
 
@@ -23,6 +24,7 @@ interface UptimeData {
   telegram: string;
   database: string;
   dexscreener: string;
+  groq?: string;
 }
 
 interface HealthResponse {
@@ -175,7 +177,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
         </section>
 
         {/* Services Status Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           
           {/* Service: Web App */}
           <div className="p-5 rounded border border-border-custom bg-card-custom/40 flex items-center justify-between">
@@ -251,8 +253,8 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
                 <Compass size={18} />
               </div>
               <div>
-                <h3 className="font-mono text-sm font-bold">DexScreener Collector</h3>
-                <span className="text-[10px] text-muted-custom font-mono">Discovery feeds API</span>
+                <h3 className="font-mono text-sm font-bold">DexScreener API</h3>
+                <span className="text-[10px] text-muted-custom font-mono">Discovery feeds</span>
               </div>
             </div>
             <div className="flex items-center gap-2 font-mono text-xs">
@@ -263,6 +265,43 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
                   <span className={`h-2 w-2 rounded-full ${health?.uptime.dexscreener === 'operational' ? 'bg-lime' : health?.uptime.dexscreener === 'degraded' ? 'bg-amber-400' : 'bg-rose-500'}`}></span>
                   <span className={health?.uptime.dexscreener === 'operational' ? 'text-lime' : health?.uptime.dexscreener === 'degraded' ? 'text-amber-400' : 'text-rose-500'}>
                     {health?.uptime.dexscreener === 'operational' ? 'Operational' : health?.uptime.dexscreener === 'degraded' ? 'Degraded' : 'Outage'}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Service: Groq AI Engine */}
+          <div className="p-5 rounded border border-border-custom bg-card-custom/40 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded bg-zinc-800/50 flex items-center justify-center text-zinc-400">
+                <Brain size={18} />
+              </div>
+              <div>
+                <h3 className="font-mono text-sm font-bold">Groq AI Engine</h3>
+                <span className="text-[10px] text-muted-custom font-mono">Narrative analysis</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 font-mono text-xs">
+              {loading ? (
+                <span className="text-muted-custom">Checking...</span>
+              ) : (
+                <>
+                  <span className={`h-2 w-2 rounded-full ${
+                    health?.uptime.groq === 'operational' ? 'bg-lime' : 
+                    health?.uptime.groq === 'degraded' ? 'bg-amber-400' : 
+                    health?.uptime.groq === 'unconfigured' ? 'bg-zinc-500' : 'bg-rose-500'
+                  }`}></span>
+                  <span className={
+                    health?.uptime.groq === 'operational' ? 'text-lime' : 
+                    health?.uptime.groq === 'degraded' ? 'text-amber-400' : 
+                    health?.uptime.groq === 'unconfigured' ? 'text-zinc-500' : 'text-rose-500'
+                  }>
+                    {
+                      health?.uptime.groq === 'operational' ? 'Operational' : 
+                      health?.uptime.groq === 'degraded' ? 'Degraded' : 
+                      health?.uptime.groq === 'unconfigured' ? 'Unconfigured' : 'Outage'
+                    }
                   </span>
                 </>
               )}

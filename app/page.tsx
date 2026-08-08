@@ -162,7 +162,7 @@ export default function LandingPage() {
               </div>
               <h3 className="font-mono text-sm font-bold">1. SCAN</h3>
               <p className="text-xs text-muted-custom leading-relaxed">
-                Gathers token boosts and profile activity across multiple blockchains including Solana, BNB, and Robinhood Chain.
+                Gathers token boosts and profile activity across multiple blockchains including Solana, Base, Ethereum, and Arbitrum.
               </p>
             </div>
 
