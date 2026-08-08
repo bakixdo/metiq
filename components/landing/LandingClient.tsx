@@ -161,20 +161,20 @@ export default function LandingClient({
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground radar-grid radar-sweep relative flex flex-col justify-between selection:bg-lime selection:text-black">
+    <div className="min-h-screen bg-background text-foreground radar-grid relative flex flex-col selection:bg-lime selection:text-black">
       
       {/* Decorative top grid line */}
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-lime/20 to-transparent" />
 
       {/* Header Navigation */}
-      <header className="border-b border-border-custom bg-background/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-border-custom bg-background/90 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-mono tracking-wider text-xl font-bold group">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-lime"></span>
             </span>
-            METIQ Bot
+            <span className="text-zinc-900">METIQ Bot</span>
           </Link>
           
           <nav className="hidden md:flex items-center gap-8 text-sm font-mono text-muted-custom">
@@ -198,37 +198,37 @@ export default function LandingClient({
         </div>
       </header>
 
-      <main className="flex-grow max-w-6xl mx-auto px-4 w-full py-12 md:py-20 flex flex-col gap-24">
+      <main className="flex-grow max-w-6xl mx-auto px-4 w-full pt-10 pb-20 flex flex-col gap-24 relative z-10">
         
         {/* Hero Section */}
-        <section className="flex flex-col lg:flex-row items-center gap-12 lg:gap-8 justify-between">
-          <div className="flex-1 flex flex-col gap-6 text-left max-w-2xl">
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-start py-8">
+          <div className="lg:col-span-7 flex flex-col gap-6 text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-lime/30 bg-lime-muted/50 text-lime font-mono text-xs w-fit">
               <Radar size={14} className="animate-spin-slow" />
               CRYPTO META INTELLIGENCE TERMINAL
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-zinc-900">
               Frontrun the next crypto meta before it becomes <span className="text-lime">obvious</span>.
             </h1>
             
-            <p className="text-lg text-muted-custom leading-relaxed">
+            <p className="text-base md:text-lg text-zinc-700 leading-relaxed">
               METIQ automatically scans top pools across Solana, Base, Ethereum, and Arbitrum. Using entropy breadth formulas and wash-trading filter models, we deliver clear, actionable reports straight to Telegram.
             </p>
             
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mt-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mt-2">
               <a 
                 id="cta-telegram"
                 href={telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-8 py-3.5 rounded bg-lime hover:bg-lime-hover text-black font-mono text-sm font-semibold tracking-wider text-center glow-hover transition-all duration-300 flex items-center justify-center gap-2"
+                className="px-6 py-3 rounded bg-lime hover:bg-lime-hover text-black font-mono text-sm font-semibold tracking-wider text-center glow-hover transition-all duration-300 flex items-center justify-center gap-2"
               >
                 <Bot size={16} /> OPEN TELEGRAM BOT
               </a>
               <a 
                 href="#simulator"
-                className="px-8 py-3.5 rounded border border-border-custom bg-card-custom/50 hover:border-lime text-foreground hover:text-lime font-mono text-sm tracking-wider text-center transition-all duration-300 flex items-center justify-center gap-2"
+                className="px-6 py-3 rounded border border-border-custom bg-white hover:border-lime text-zinc-800 hover:text-lime font-mono text-sm tracking-wider text-center transition-all duration-300 flex items-center justify-center gap-2"
               >
                 <Terminal size={16} /> TRY WEB SIMULATOR
               </a>
@@ -236,9 +236,9 @@ export default function LandingClient({
           </div>
 
           {/* Interactive Telegram Simulator Mockup */}
-          <div id="simulator" className="flex-1 w-full max-w-md relative">
-            <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-lime/20 to-transparent blur opacity-40 animate-pulse" />
-            <div className="relative rounded-lg border border-border-custom bg-card-custom overflow-hidden shadow-2xl flex flex-col h-[520px]">
+          <div id="simulator" className="lg:col-span-5 w-full max-w-md relative mx-auto lg:mx-0">
+            <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-lime/20 to-transparent blur opacity-45" />
+            <div className="relative rounded-lg border border-border-custom bg-card-custom overflow-hidden shadow-xl flex flex-col h-[520px]">
               
               {/* Telegram Header */}
               <div className="bg-background px-4 py-3 border-b border-border-custom flex items-center justify-between">
