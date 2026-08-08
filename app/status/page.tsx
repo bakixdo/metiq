@@ -8,7 +8,7 @@ async function fetchRecentScans() {
     const supabase = getDb();
     const { data, error } = await supabase
       .from('scans')
-      .select('id, status, started_at, completed_at, trigger, coins_scanned, error_summary')
+      .select('id, status, started_at, completed_at, coins_scanned')
       .order('started_at', { ascending: false })
       .limit(5);
 

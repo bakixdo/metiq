@@ -46,9 +46,7 @@ interface ScanRecord {
   status: 'completed' | 'running' | 'failed';
   started_at: string;
   completed_at: string | null;
-  trigger: 'cron' | 'manual';
   coins_scanned: number;
-  error_summary: string | null;
 }
 
 interface StatusClientProps {
@@ -348,7 +346,6 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
                 <thead>
                   <tr className="border-b border-border-custom bg-card-custom/50 text-muted-custom">
                     <th className="p-4">SCAN ID</th>
-                    <th className="p-4">TRIGGER</th>
                     <th className="p-4">STATUS</th>
                     <th className="p-4">COMPLETED AT</th>
                     <th className="p-4">COINS</th>
@@ -357,7 +354,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
                 <tbody className="divide-y divide-border-custom text-zinc-300">
                   {history.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-muted-custom italic">
+                      <td colSpan={4} className="p-8 text-center text-muted-custom italic">
                         No scan records found in database. Run a scan via the bot.
                       </td>
                     </tr>
@@ -366,9 +363,6 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
                       <tr key={scan.id} className="hover:bg-white/2">
                         <td className="p-4 font-bold text-[11px] text-zinc-500">
                           {scan.id.substring(0, 8)}...
-                        </td>
-                        <td className="p-4 uppercase">
-                          {scan.trigger}
                         </td>
                         <td className="p-4">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] ${

@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
-  --lime: #c8ff00;
-  --lime-hover: #b2e600;
-  --lime-muted: rgba(200, 255, 0, 0.08);
-  --lime-glow: rgba(200, 255, 0, 0.2);
-  --card: #18181b;
-  --border: #27272a;
-  --muted: #a1a1aa;
+  --background: #fafafa;
+  --foreground: #09090b;
+  --lime: #059669;
+  --lime-hover: #047857;
+  --lime-muted: rgba(5, 150, 105, 0.06);
+  --lime-glow: rgba(5, 150, 105, 0.15);
+  --card: #ffffff;
+  --border: #e4e4e7;
+  --muted: #71717a;
 }
 
 @theme inline {
@@ -35,8 +35,8 @@ body {
 .radar-grid {
   background-size: 50px 50px;
   background-image: 
-    linear-gradient(to right, rgba(200, 255, 0, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(200, 255, 0, 0.02) 1px, transparent 1px);
+    linear-gradient(to right, rgba(9, 9, 11, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(9, 9, 11, 0.03) 1px, transparent 1px);
 }
 
 .radar-sweep {
@@ -54,8 +54,8 @@ body {
   background: conic-gradient(
     from 0deg,
     transparent 50%,
-    rgba(200, 255, 0, 0.03) 90%,
-    rgba(200, 255, 0, 0.08) 100%
+    rgba(5, 150, 105, 0.01) 90%,
+    rgba(5, 150, 105, 0.03) 100%
   );
   animation: sweep 8s linear infinite;
   pointer-events: none;
