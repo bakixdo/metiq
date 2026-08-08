@@ -162,14 +162,23 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
 
     const classifiedTokens = topTokens.map(tok => {
       let narrative = aiClassifications[tok.address.toLowerCase()];
-      // If AI classifies as "Other" or fails to classify, verify with taxonomy keyword match
+      const taxonomyNarrative = classifyToken({
+        name: tok.name,
+        symbol: tok.symbol,
+        description: tok.description,
+      });
+
       if (!narrative || narrative === 'Other') {
-        narrative = classifyToken({
-          name: tok.name,
-          symbol: tok.symbol,
-          description: tok.description,
-        });
+        // AI didn't classify or said Other — use taxonomy
+        narrative = taxonomyNarrative;
+      } else if (taxonomyNarrative !== 'Other' && taxonomyNarrative !== narrative) {
+        // AI gave a valid category, but taxonomy disagrees with a specific match.
+        // Taxonomy keyword matches are high-precision (e.g. "stonk" → Stocks),
+        // so prefer taxonomy when it has a strong opinion.
+        console.warn(`⚠️ AI/Taxonomy conflict for ${tok.symbol}: AI=${narrative}, Taxonomy=${taxonomyNarrative}. Using taxonomy.`);
+        narrative = taxonomyNarrative;
       }
+
       return {
         ...tok,
         narrative,

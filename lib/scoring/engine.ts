@@ -214,12 +214,17 @@ export function scoreNarratives(
       stage = 'Crowded';
     }
 
-    // Leaders: top 3 coins by 6H volume
-    const leaders = sortedByVol.slice(0, 3).map(t => ({
-      symbol: t.symbol.replace('$', '').toUpperCase(),
-      chain: t.chain,
-      address: t.address,
-    }));
+    // Leaders: top 3 coins by 6H volume, deduplicated by symbol
+    const seenSymbols = new Set<string>();
+    const leaders: Array<{ symbol: string; chain: string; address: string }> = [];
+    for (const t of sortedByVol) {
+      const sym = t.symbol.replace('$', '').toUpperCase();
+      if (!seenSymbols.has(sym)) {
+        seenSymbols.add(sym);
+        leaders.push({ symbol: sym, chain: t.chain, address: t.address });
+      }
+      if (leaders.length >= 3) break;
+    }
 
     scoredNarratives.push({
       name: narrativeName,
