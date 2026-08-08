@@ -4,6 +4,7 @@ import { classifyToken } from '../classification/taxonomy';
 import { scoreNarratives, ScoredNarrative } from '../scoring/engine';
 import { formatTelegramReport } from '../reports/formatter';
 import { getEnv } from '../config/env';
+import { classifyTokensWithGroq, generateNarrativeSignal } from '../classification/groq';
 
 export interface ScanResult {
   scanId: string;
@@ -126,13 +127,26 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
       throw new Error(`Market data collection returned zero tokens. Details: ${collectorStatus.errorSummary || 'No error details'}`);
     }
 
-    // 5. CLASSIFY TOKENS
+    // 5. CLASSIFY TOKENS (with optional Groq AI classification and manual taxonomy fallback)
+    let aiClassifications: Record<string, string> = {};
+    if (env.GROQ_API_KEY) {
+      try {
+        console.log('🤖 Triggering Groq API for token classification...');
+        aiClassifications = await classifyTokensWithGroq(tokens);
+      } catch (err: any) {
+        console.warn('⚠️ Groq classification failed, falling back to taxonomy matching:', err.message);
+      }
+    }
+
     const classifiedTokens = tokens.map(tok => {
-      const narrative = classifyToken({
-        name: tok.name,
-        symbol: tok.symbol,
-        description: tok.description,
-      });
+      let narrative = aiClassifications[tok.address.toLowerCase()];
+      if (!narrative) {
+        narrative = classifyToken({
+          name: tok.name,
+          symbol: tok.symbol,
+          description: tok.description,
+        });
+      }
       return {
         ...tok,
         narrative,
@@ -169,6 +183,28 @@ export async function runScan(triggerSource: 'cron' | 'manual'): Promise<ScanRes
 
     // 7. SCORE NARRATIVES
     const scoredNarratives = scoreNarratives(classifiedTokens, previousSnapshots);
+
+    // 7.5. GENERATE AI SIGNALS FOR TOP 5 NARRATIVES
+    if (env.GROQ_API_KEY && scoredNarratives.length > 0) {
+      console.log('🤖 Generating dynamic market intelligence signals via Groq...');
+      const signalPromises = scoredNarratives.slice(0, 5).map(async (sn) => {
+        if (sn.warnings.length === 0) {
+          try {
+            const signal = await generateNarrativeSignal(sn.name, sn.leaders, {
+              volume: sn.volume_6h,
+              liquidity: sn.liquidity,
+              coins: sn.coin_count,
+            });
+            if (signal) {
+              sn.signal = signal;
+            }
+          } catch (err: any) {
+            console.warn(`⚠️ Failed to generate AI signal for narrative ${sn.name}:`, err.message);
+          }
+        }
+      });
+      await Promise.allSettled(signalPromises);
+    }
 
     // 8. FORMAT REPORT HTML
     const completedAt = new Date();

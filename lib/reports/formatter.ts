@@ -85,7 +85,8 @@ export function formatTelegramReport(
     if (nar.warnings && nar.warnings.length > 0) {
       report += `Warning: ${escapeHtml(nar.warnings.join(' · '))}\n\n`;
     } else {
-      report += `Signal: ${escapeHtml(getDefaultSignal(nar.stage))}\n\n`;
+      const signalText = nar.signal || getDefaultSignal(nar.stage);
+      report += `Signal: ${escapeHtml(signalText)}\n\n`;
     }
   });
 

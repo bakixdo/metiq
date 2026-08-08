@@ -11,6 +11,7 @@ const envSchema = z.object({
   MIN_LIQUIDITY_USD: z.coerce.number().default(5000),
   MAX_SCAN_CANDIDATES: z.coerce.number().default(150),
   MANUAL_SCAN_COOLDOWN_SECONDS: z.coerce.number().default(120),
+  GROQ_API_KEY: z.string().optional().or(z.literal('')),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -31,6 +32,7 @@ export function getEnv(): Env {
     MIN_LIQUIDITY_USD: process.env.MIN_LIQUIDITY_USD,
     MAX_SCAN_CANDIDATES: process.env.MAX_SCAN_CANDIDATES,
     MANUAL_SCAN_COOLDOWN_SECONDS: process.env.MANUAL_SCAN_COOLDOWN_SECONDS,
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
   });
 
   if (!result.success) {
@@ -45,6 +47,7 @@ export function getEnv(): Env {
       MIN_LIQUIDITY_USD: Number(process.env.MIN_LIQUIDITY_USD) || 5000,
       MAX_SCAN_CANDIDATES: Number(process.env.MAX_SCAN_CANDIDATES) || 150,
       MANUAL_SCAN_COOLDOWN_SECONDS: Number(process.env.MANUAL_SCAN_COOLDOWN_SECONDS) || 120,
+      GROQ_API_KEY: process.env.GROQ_API_KEY || '',
     };
   }
 
@@ -64,6 +67,7 @@ export function validateEnv(): Env {
     MIN_LIQUIDITY_USD: process.env.MIN_LIQUIDITY_USD,
     MAX_SCAN_CANDIDATES: process.env.MAX_SCAN_CANDIDATES,
     MANUAL_SCAN_COOLDOWN_SECONDS: process.env.MANUAL_SCAN_COOLDOWN_SECONDS,
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
   });
 
   if (!result.success) {

@@ -11,6 +11,7 @@ export interface ScoredNarrative {
   score_change: number;
   warnings: string[];
   leaders: string[];
+  signal?: string;
 }
 
 export function scoreNarratives(
