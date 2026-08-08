@@ -38,13 +38,31 @@ export default async function LandingPage() {
   const env = getEnv();
   const botProfile = await getBotProfile();
   
+  // Fetch actual latest report HTML from database to show real live results in the simulator
+  let latestReportHtml: string | null = null;
+  try {
+    const { getDb } = await import('@/lib/database/db');
+    const supabase = getDb();
+    const { data: latestScan } = await supabase
+      .from('scans')
+      .select('report_html')
+      .eq('status', 'completed')
+      .order('started_at', { ascending: false })
+      .limit(1);
+    
+    latestReportHtml = latestScan?.[0]?.report_html || null;
+  } catch (dbErr) {
+    console.warn('Could not load latest report for landing simulator:', dbErr);
+  }
+
   const botUsername = botProfile?.username || env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'MetiqBot';
   const telegramUrl = `https://t.me/${botUsername}`;
 
   return (
     <LandingClient 
       botProfile={botProfile} 
-      telegramUrl={telegramUrl} 
+      telegramUrl={telegramUrl}
+      latestReportHtml={latestReportHtml}
     />
   );
 }
