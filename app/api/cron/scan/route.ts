@@ -6,6 +6,7 @@ import { runScan } from '@/lib/scanning/runner';
 import { sendTelegramMessage } from '@/lib/telegram/bot';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 function safeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false;

@@ -8,6 +8,7 @@ import { formatUtcDate } from '@/lib/reports/formatter';
 import { cacheGet, cacheSet } from '@/lib/database/redis';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // Allow up to 60s for DexScreener + Grok scan pipeline
 
 // Timing-safe secret comparison
 function safeCompare(a: string, b: string): boolean {
@@ -128,67 +129,51 @@ async function handleMessage(req: NextRequest, chatId: string, text: string, sup
         .limit(1);
 
       const hasScan = latestScan && latestScan.length > 0;
-      
-      if (!hasScan) {
-        // Case A: No data is available in the database yet.
-        // We must show the scanning loader and run synchronously in the background.
-        const sentMsg = await sendTelegramMessage(chatId, '🔍 <i>No cached scans found. Initiating full market scan (takes ~8s)...</i>');
-        const messageId = sentMsg.message_id;
-
-        (req as any).waitUntil(
-          (async () => {
-            try {
-              const result = await runScan('manual');
-              await editTelegramMessage(chatId, messageId, result.reportHtml || 'Scan completed successfully.');
-            } catch (err: any) {
-              console.error('Background initial scan failed:', err);
-              await editTelegramMessage(chatId, messageId, `❌ <b>Scan Failed</b>\n\nFailed to complete the market scan: ${escapeHtml(err.message || 'Please try again later.')}`);
-            }
-          })()
-        );
-        break;
-      }
-
-      // Case B: We have a completed scan in the database.
-      // Check if the cooldown is active.
-      const lastCompletedTime = new Date(latestScan[0].completed_at).getTime();
-      const diffSeconds = Math.floor((Date.now() - lastCompletedTime) / 1000);
+      const lastCompletedTime = hasScan ? new Date(latestScan[0].completed_at).getTime() : 0;
+      const diffSeconds = hasScan ? Math.floor((Date.now() - lastCompletedTime) / 1000) : Infinity;
       const cooldownSeconds = 120; // 2 minutes
 
-      const sources = latestScan[0].sources as any || {};
+      // Check AI availability for cooldown bypass logic
+      const sources = hasScan ? (latestScan[0].sources as any || {}) : {};
       const hadAI = !!sources.aiProvider;
       const env = getEnv();
       const currentAIConfigured = !!env.GROK_API_KEY || !!env.GROQ_API_KEY;
-
-      const isCooldownActive = diffSeconds < cooldownSeconds && (hadAI || !currentAIConfigured);
+      const isCooldownActive = hasScan && diffSeconds < cooldownSeconds && (hadAI || !currentAIConfigured);
 
       if (isCooldownActive) {
-        // Cooldown is active. Just serve the existing cached report immediately!
-        const dateStr = formatUtcDate(new Date(latestScan[0].completed_at));
+        // Cooldown is active. Just serve the existing cached report immediately.
         const remaining = cooldownSeconds - diffSeconds;
         const cooldownMsg = `${latestScan[0].report_html}\n\n<i>⚠️ Cooldown active. Refresh available in ${remaining}s.</i>`;
         await sendTelegramMessage(chatId, cooldownMsg);
-      } else {
-        // Cooldown has expired. We should serve the existing cached report IMMEDIATELY,
-        // and trigger a background refresh to revalidate data!
-        const existingReport = latestScan[0].report_html;
-        const initialMsg = `${existingReport}\n\n🔄 <i>Revalidating & refreshing market data in background...</i>`;
-        const sentMsg = await sendTelegramMessage(chatId, initialMsg);
-        const messageId = sentMsg.message_id;
+        break;
+      }
 
-        (req as any).waitUntil(
-          (async () => {
-            try {
-              const result = await runScan('manual');
-              // Edit the message with the fresh report once completed!
-              await editTelegramMessage(chatId, messageId, result.reportHtml || 'Scan completed.');
-            } catch (err: any) {
-              console.error('Background revalidation scan failed:', err);
-              // Do not overwrite the existing message on background failure, just revert the loading suffix
-              await editTelegramMessage(chatId, messageId, existingReport);
-            }
-          })()
-        );
+      // 2. Run a fresh scan. Show a scanning indicator.
+      const sentMsg = await sendTelegramMessage(chatId, '🔍 <i>Scanning DexScreener markets & running Grok analysis...</i>');
+      const messageId = sentMsg.message_id;
+
+      try {
+        const result = await runScan('manual');
+
+        if (result.status === 'running') {
+          // Another scan is already in progress — serve the stale report if available
+          const fallback = hasScan ? latestScan[0].report_html : '<i>A scan is already running. Try again in a moment.</i>';
+          await editTelegramMessage(chatId, messageId, `⏳ <b>Scan in Progress</b>\n\nAnother scan is running. Here is the latest report:\n\n${fallback}`);
+        } else {
+          await editTelegramMessage(chatId, messageId, result.reportHtml || 'Scan completed successfully.');
+        }
+      } catch (err: any) {
+        console.error('Scan command failed:', err);
+
+        // Scan failed — serve stale data with a clear error notice if we have it
+        if (hasScan) {
+          const ageMinutes = Math.floor(diffSeconds / 60);
+          const ageLabel = ageMinutes >= 60 ? `${Math.floor(ageMinutes / 60)}h ${ageMinutes % 60}m` : `${ageMinutes}m`;
+          const staleMsg = `${latestScan[0].report_html}\n\n⚠️ <i>Fresh scan failed (${escapeHtml(err.message || 'timeout')}). Showing cached report from ${ageLabel} ago.</i>`;
+          await editTelegramMessage(chatId, messageId, staleMsg);
+        } else {
+          await editTelegramMessage(chatId, messageId, `❌ <b>Scan Failed</b>\n\n${escapeHtml(err.message || 'Please try again later.')}`);
+        }
       }
       break;
     }
