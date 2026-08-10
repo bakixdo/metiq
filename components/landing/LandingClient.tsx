@@ -66,8 +66,12 @@ export default function LandingClient({
     }));
   };
 
+  const hasInteracted = useRef(false);
+
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (hasInteracted.current) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isTyping]);
 
   const formatTime = () => {
@@ -123,6 +127,7 @@ export default function LandingClient({
   const handleSendMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputValue.trim()) return;
+    hasInteracted.current = true;
 
     const userText = inputValue;
     setInputValue('');
@@ -290,6 +295,7 @@ export default function LandingClient({
                           <button
                             key={btnIdx}
                             onClick={() => {
+                              hasInteracted.current = true;
                               setMessages(prev => [
                                 ...prev,
                                 { sender: 'user', text: btn, timestamp: formatTime() }
