@@ -99,7 +99,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
     switch (status) {
       case 'operational':
         return {
-          icon: <CheckCircle className="text-lime" size={18} />,
+          icon: <CheckCircle className="text-lime-text" size={18} />,
           text: 'Operational',
           bg: 'bg-lime/10 border-lime/30 text-lime',
           dot: 'bg-lime shadow-[0_0_10px_#C8FF00]',
@@ -133,7 +133,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
       {/* Header */}
       <header className="border-b border-border-custom bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-mono text-muted-custom hover:text-lime transition-colors text-sm">
+          <Link href="/" className="flex items-center gap-2 font-mono text-muted-custom hover:text-lime-text transition-colors text-sm">
             <ArrowLeft size={16} /> BACK TO METIQ
           </Link>
           <span className="font-mono text-sm tracking-wider font-bold">SYSTEM STATUS</span>
@@ -188,7 +188,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
                 <span className="text-[10px] text-muted-custom font-mono">Web server routes</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 font-mono text-xs text-lime">
+            <div className="flex items-center gap-2 font-mono text-xs text-lime-text">
               <span className="h-2 w-2 rounded-full bg-lime"></span>
               Operational
             </div>
@@ -211,7 +211,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
               ) : (
                 <>
                   <span className={`h-2 w-2 rounded-full ${health?.uptime.database === 'operational' ? 'bg-lime' : 'bg-rose-500'}`}></span>
-                  <span className={health?.uptime.database === 'operational' ? 'text-lime' : 'text-rose-500'}>
+                  <span className={health?.uptime.database === 'operational' ? 'text-lime-text' : 'text-rose-500'}>
                     {health?.uptime.database === 'operational' ? 'Operational' : 'Outage'}
                   </span>
                 </>
@@ -236,7 +236,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
               ) : (
                 <>
                   <span className={`h-2 w-2 rounded-full ${health?.uptime.telegram === 'operational' ? 'bg-lime' : health?.uptime.telegram === 'degraded' ? 'bg-amber-400' : 'bg-rose-500'}`}></span>
-                  <span className={health?.uptime.telegram === 'operational' ? 'text-lime' : health?.uptime.telegram === 'degraded' ? 'text-amber-400' : 'text-rose-500'}>
+                  <span className={health?.uptime.telegram === 'operational' ? 'text-lime-text' : health?.uptime.telegram === 'degraded' ? 'text-amber-400' : 'text-rose-500'}>
                     {health?.uptime.telegram === 'operational' ? 'Operational' : health?.uptime.telegram === 'degraded' ? 'Degraded' : 'Outage'}
                   </span>
                 </>
@@ -261,7 +261,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
               ) : (
                 <>
                   <span className={`h-2 w-2 rounded-full ${health?.uptime.dexscreener === 'operational' ? 'bg-lime' : health?.uptime.dexscreener === 'degraded' ? 'bg-amber-400' : 'bg-rose-500'}`}></span>
-                  <span className={health?.uptime.dexscreener === 'operational' ? 'text-lime' : health?.uptime.dexscreener === 'degraded' ? 'text-amber-400' : 'text-rose-500'}>
+                  <span className={health?.uptime.dexscreener === 'operational' ? 'text-lime-text' : health?.uptime.dexscreener === 'degraded' ? 'text-amber-400' : 'text-rose-500'}>
                     {health?.uptime.dexscreener === 'operational' ? 'Operational' : health?.uptime.dexscreener === 'degraded' ? 'Degraded' : 'Outage'}
                   </span>
                 </>
@@ -291,7 +291,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
                     health?.uptime.groq === 'unconfigured' ? 'bg-zinc-500' : 'bg-rose-500'
                   }`}></span>
                   <span className={
-                    health?.uptime.groq === 'operational' ? 'text-lime' : 
+                    health?.uptime.groq === 'operational' ? 'text-lime-text' : 
                     health?.uptime.groq === 'degraded' ? 'text-amber-400' : 
                     health?.uptime.groq === 'unconfigured' ? 'text-zinc-500' : 'text-rose-500'
                   }>
@@ -319,7 +319,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
 
           <div className="flex flex-col gap-1 border-b sm:border-b-0 sm:border-r border-border-custom/50 pb-4 sm:pb-0 sm:pl-4">
             <span className="text-[10px] text-muted-custom flex items-center gap-1.5"><Zap size={12} /> API RESPONSE TIME</span>
-            <span className="text-sm font-bold text-lime">
+            <span className="text-sm font-bold text-lime-text">
               {health ? `${health.executionTimeMs}ms` : 'Checking...'}
             </span>
           </div>
@@ -337,7 +337,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
         {/* Scan History Section */}
         <section className="flex flex-col gap-4">
           <h2 className="text-lg font-mono font-bold flex items-center gap-2">
-            <History size={16} className="text-lime" /> RECENT SCAN RECORDS
+            <History size={16} className="text-lime-text" /> RECENT SCAN RECORDS
           </h2>
 
           <div className="rounded border border-border-custom bg-card-custom/25 overflow-hidden">
@@ -367,7 +367,7 @@ export default function StatusClient({ initialScans }: StatusClientProps) {
                         <td className="p-4">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] ${
                             scan.status === 'completed' 
-                              ? 'bg-lime-muted text-lime border border-lime/20' 
+                              ? 'bg-lime-muted text-lime-text border border-lime/20' 
                               : scan.status === 'running'
                               ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20'
                               : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'

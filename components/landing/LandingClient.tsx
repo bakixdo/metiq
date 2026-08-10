@@ -176,19 +176,21 @@ export default function LandingClient({
       {/* Header Navigation */}
       <header className="border-b border-border-custom bg-background/90 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-mono tracking-wider text-xl font-bold group">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-lime"></span>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2 font-mono tracking-wider text-xl font-bold group">
+              <img src="/icon.jpg" alt="METIQ" className="h-8 w-8 rounded-md" />
+              <span className="text-zinc-900">METIQ</span>
+            </Link>
+            <span className="text-muted-custom text-xs font-mono">by{' '}
+              <a href="https://x.com/bakixdo" target="_blank" rel="noopener noreferrer" className="text-lime-text hover:text-foreground transition-colors underline underline-offset-2">Baki</a>
             </span>
-            <span className="text-zinc-900">METIQ Bot</span>
-          </Link>
+          </div>
           
           <nav className="hidden md:flex items-center gap-8 text-sm font-mono text-muted-custom">
-            <a href="#simulator" className="hover:text-lime transition-colors">Bot Simulator</a>
-            <a href="#how-it-works" className="hover:text-lime transition-colors">How It Works</a>
-            <a href="#faq" className="hover:text-lime transition-colors">FAQs</a>
-            <Link href="/status" className="hover:text-lime transition-colors">System Status</Link>
+            <a href="#simulator" className="hover:text-lime-text transition-colors">Bot Simulator</a>
+            <a href="#how-it-works" className="hover:text-lime-text transition-colors">How It Works</a>
+            <a href="#faq" className="hover:text-lime-text transition-colors">FAQs</a>
+            <Link href="/status" className="hover:text-lime-text transition-colors">System Status</Link>
           </nav>
 
           <div className="flex items-center gap-4">
@@ -197,7 +199,7 @@ export default function LandingClient({
               href={telegramUrl}
               target="_blank"
               rel="noopener noreferrer" 
-              className="px-4 py-1.5 rounded border border-lime text-lime hover:bg-lime hover:text-black font-mono text-xs tracking-wider transition-all duration-300 flex items-center gap-1.5"
+              className="px-4 py-1.5 rounded border border-lime text-zinc-800 hover:bg-lime hover:text-black font-mono text-xs tracking-wider transition-all duration-300 flex items-center gap-1.5"
             >
               LAUNCH TELEGRAM <ExternalLink size={12} />
             </a>
@@ -210,13 +212,13 @@ export default function LandingClient({
         {/* Hero Section */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-start py-8">
           <div className="lg:col-span-7 flex flex-col gap-6 text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-lime/30 bg-lime-muted/50 text-lime font-mono text-xs w-fit">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-lime/30 bg-lime-muted/50 text-lime-text font-mono text-xs w-fit">
               <Radar size={14} className="animate-spin-slow" />
               CRYPTO META INTELLIGENCE TERMINAL
             </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-zinc-900">
-              Frontrun the next crypto meta before it becomes <span className="text-lime">obvious</span>.
+              Frontrun the next crypto meta before it becomes <span className="text-lime-text">obvious</span>.
             </h1>
             
             <p className="text-base md:text-lg text-zinc-700 leading-relaxed">
@@ -235,7 +237,7 @@ export default function LandingClient({
               </a>
               <a 
                 href="#simulator"
-                className="px-6 py-3 rounded border border-border-custom bg-white hover:border-lime text-zinc-800 hover:text-lime font-mono text-sm tracking-wider text-center transition-all duration-300 flex items-center justify-center gap-2"
+                className="px-6 py-3 rounded border border-border-custom bg-white hover:border-lime text-zinc-800 hover:text-lime-text font-mono text-sm tracking-wider text-center transition-all duration-300 flex items-center justify-center gap-2"
               >
                 <Terminal size={16} /> TRY WEB SIMULATOR
               </a>
@@ -257,16 +259,16 @@ export default function LandingClient({
                       className="w-9 h-9 rounded-full object-cover border border-border-custom"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-lime/10 flex items-center justify-center text-lime font-mono font-bold text-xs border border-lime/30">
+                    <div className="w-9 h-9 rounded-full bg-lime/10 flex items-center justify-center text-lime-text font-mono font-bold text-xs border border-lime/30">
                       {botInitial}
                     </div>
                   )}
                   <div>
                     <h3 className="font-semibold text-xs leading-none">{botName}</h3>
-                    <span className="text-[10px] text-lime">bot</span>
+                    <span className="text-[10px] text-lime-text">bot</span>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 text-[9px] font-mono rounded bg-lime-muted text-lime border border-lime/25">INTERACTIVE WEB SIMULATOR</span>
+                <span className="px-2 py-0.5 text-[9px] font-mono rounded bg-lime-muted text-lime-text border border-lime/25">INTERACTIVE WEB SIMULATOR</span>
               </div>
 
               {/* Chat Messages Panel */}
@@ -355,7 +357,7 @@ export default function LandingClient({
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="p-6 rounded border border-border-custom bg-card-custom/20 flex flex-col gap-4">
-              <div className="w-10 h-10 rounded bg-lime-muted flex items-center justify-center text-lime">
+              <div className="w-10 h-10 rounded bg-lime-muted flex items-center justify-center text-lime-text">
                 <Radar size={20} />
               </div>
               <h3 className="font-mono text-sm font-bold">1. SCAN</h3>
@@ -365,7 +367,7 @@ export default function LandingClient({
             </div>
 
             <div className="p-6 rounded border border-border-custom bg-card-custom/20 flex flex-col gap-4">
-              <div className="w-10 h-10 rounded bg-lime-muted flex items-center justify-center text-lime">
+              <div className="w-10 h-10 rounded bg-lime-muted flex items-center justify-center text-lime-text">
                 <Layers size={20} />
               </div>
               <h3 className="font-mono text-sm font-bold">2. CLUSTER</h3>
@@ -375,7 +377,7 @@ export default function LandingClient({
             </div>
 
             <div className="p-6 rounded border border-border-custom bg-card-custom/20 flex flex-col gap-4">
-              <div className="w-10 h-10 rounded bg-lime-muted flex items-center justify-center text-lime">
+              <div className="w-10 h-10 rounded bg-lime-muted flex items-center justify-center text-lime-text">
                 <TrendingUp size={20} />
               </div>
               <h3 className="font-mono text-sm font-bold">3. SCORE</h3>
@@ -385,7 +387,7 @@ export default function LandingClient({
             </div>
 
             <div className="p-6 rounded border border-border-custom bg-card-custom/20 flex flex-col gap-4">
-              <div className="w-10 h-10 rounded bg-lime-muted flex items-center justify-center text-lime">
+              <div className="w-10 h-10 rounded bg-lime-muted flex items-center justify-center text-lime-text">
                 <Bot size={20} />
               </div>
               <h3 className="font-mono text-sm font-bold">4. ALERT</h3>
@@ -414,7 +416,7 @@ export default function LandingClient({
                   className="w-full p-5 text-left font-mono font-bold text-sm flex items-center justify-between gap-4 hover:bg-zinc-50/50"
                 >
                   <span className="flex items-center gap-2 text-zinc-800">
-                    <HelpCircle size={16} className="text-lime" />
+                    <HelpCircle size={16} className="text-lime-text" />
                     {faq.q}
                   </span>
                   <ChevronDown 

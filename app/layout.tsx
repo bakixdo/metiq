@@ -5,7 +5,11 @@ export const metadata: Metadata = {
   title: 'METIQ - Crypto Meta Intelligence',
   description: 'Detect emerging crypto narratives before they become obvious. Automatic reports every six hours, delivered directly to Telegram.',
   keywords: ['crypto', 'narratives', 'crypto meta', 'trading', 'dexscreener', 'telegram bot', 'signals', 'memes', 'ai agents'],
-  authors: [{ name: 'METIQ Team' }],
+  authors: [{ name: 'Baki', url: 'https://x.com/bakixdo' }],
+  icons: {
+    icon: '/icon.jpg',
+    apple: '/icon.jpg',
+  },
   openGraph: {
     title: 'METIQ - Crypto Meta Intelligence',
     description: 'Detect emerging crypto narratives before they become obvious. Automatic reports every six hours, delivered directly to Telegram.',
@@ -15,6 +19,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'METIQ - Crypto Meta Intelligence',
     description: 'Detect emerging crypto narratives before they become obvious. Automatic reports every six hours, delivered directly to Telegram.',
+    creator: '@bakixdo',
   },
 };
 
